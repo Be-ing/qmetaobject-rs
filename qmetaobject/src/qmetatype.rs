@@ -60,7 +60,7 @@ struct IsMetaTypePair<TraitObject, true>
         typedef void (*Creator)(const QtPrivate::QMetaTypeInterface*, void *, const void *); // copy
         typedef void (*Destructor)(const QtPrivate::QMetaTypeInterface*, void *);
         typedef void (*Constructor)(const QtPrivate::QMetaTypeInterface*, void *);
-
+    public:
         QtPrivate::QMetaTypeInterface iface;
         const QMetaObject *metaObject;
         QByteArray name;
