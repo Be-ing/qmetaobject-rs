@@ -54,13 +54,14 @@ struct IsMetaTypePair<TraitObject, true>
             delete c;
     }
 #else
-    struct RustQMetaType : QtPrivate::QMetaTypeInterface {
+    struct RustQMetaType {
         // some typedef that are gone in Qt5
         typedef void (*Deleter)(void *);
         typedef void (*Creator)(const QtPrivate::QMetaTypeInterface*, void *, const void *); // copy
         typedef void (*Destructor)(const QtPrivate::QMetaTypeInterface*, void *);
         typedef void (*Constructor)(const QtPrivate::QMetaTypeInterface*, void *);
 
+        QtPrivate::QMetaTypeInterface iface;
         const QMetaObject *metaObject;
         QByteArray name;
     };
@@ -185,7 +186,7 @@ fn register_metatype_common<T: QMetaType>(
                     /*.size=*/ size,
                     /*.flags=*/ flags,
                     /*.typeId=*/ 0,
-                    /*.metaObjectFn=*/ [](const QtPrivate::QMetaTypeInterface *iface) { return static_cast<const RustQMetaType *>(iface)->metaObject; },
+                    /*.metaObjectFn=*/ [](const QtPrivate::QMetaTypeInterface *iface) { return reinterpret_cast<const RustQMetaType *>(iface)->metaObject; },
                     /*.name=*/ name_ba.constData(),
                     /*.defaultCtr=*/ constructor_fn,
                     /*.copyCtr=*/ creator_or_copy_fn,
@@ -199,7 +200,7 @@ fn register_metatype_common<T: QMetaType>(
                     /*.legacyRegisterOp=*/ nullptr,
                 }, gadget_metaobject, name_ba
             };
-            return QMetaType(mt).id();
+            return QMetaType(&mt->iface).id();
         #endif
         });
 
@@ -308,7 +309,7 @@ fn register_metatype_qobject<T: QObject>() -> i32 {
                 /*.flags=*/ QMetaType::RelocatableType | QMetaType::PointerToQObject,
                 /*.typeId=*/ 0,
                 /*.metaObjectFn=*/ [](const QtPrivate::QMetaTypeInterface *iface)
-                    { return static_cast<const RustQMetaType *>(iface)->metaObject; },
+                    { return reinterpret_cast<const RustQMetaType *>(iface)->metaObject; },
                 /*.name=*/ name_ba.constData(),
                 /*.defaultCtr=*/ [](const QtPrivate::QMetaTypeInterface *, void *dst)
                     { *static_cast<void**>(dst) = nullptr; },
@@ -326,7 +327,7 @@ fn register_metatype_qobject<T: QObject>() -> i32 {
                 /*.legacyRegisterOp=*/ nullptr,
             }, metaobject, name_ba
         };
-        return QMetaType(mt).id();
+        return QMetaType(&mt->iface).id();
     #endif
     })
 }
